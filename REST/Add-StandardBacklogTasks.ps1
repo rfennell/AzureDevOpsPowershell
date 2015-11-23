@@ -1,12 +1,26 @@
 ﻿param
 (
-    
+    # top three should really be mandatory, but user experience better with the read-host
+    [parameter(Mandatory=$false,HelpMessage="URL of the Team Project Collection e.g. 'http://myserver:8080/tfs/defaultcollection'")]
     $collectionUrl = $(Read-Host -prompt "URL of the Team Project Collection e.g. 'http://myserver:8080/tfs/defaultcollection'"),
+    [parameter(Mandatory=$false,HelpMessage="Team Project name e.g. 'My Team project'")]
     $teamproject  = $(Read-Host -prompt "Team Project name e.g. 'My Team project'"),
+    [parameter(Mandatory=$false,HelpMessage="Backlog iteration e.g. 'My Team project/Backlog'")]
     $iterationPath = $(Read-Host -prompt "Backlog iteration e.g. 'My Team project/Backlog'"),
 
-    $username, #Username of default credentials are not in use
-    $password  #Password of default credentials are not in use
+    [parameter(Mandatory=$false,HelpMessage="Default work remaining for a task, could uses a strange number so it is easy to notice it is defaulted")]
+	$defaultsize = 0 , 
+
+    [parameter(Mandatory=$false,HelpMessage="Allows the replacement of the standard tasks that are generated, provided as hashtable")]
+    $taskTitles = @{ 
+    "Bug" = @("Investigation Task for Bug {0}", "Write test Task for Bug {0}", "Run tests Task for Bug {0}");
+    "Product Backlog Item" =  @("Design Task for PBI {0}", "Development Task for PBI {0}", "Write test Task for PBI {0}", "Run tests Task for PBI {0}", "Documentation Task for PBI {0}", , "Deployment Task for PBI {0}")
+    }, 
+
+    [parameter(Mandatory=$false,HelpMessage="Username of default credentials are not in use")]
+    $username,
+    [parameter(Mandatory=$false,HelpMessage="Password of default credentials are not in use")]
+    $password  
 
 )
 
@@ -88,28 +102,6 @@ function Get-WorkItemDetails
 }
 
 
-function Get-StandardTask 
-{
-    param
-    (
-        $wi
-    )
-    
-    $tasks = @()
-    $id = $wi.id
-
-    switch ($wi.WIT)
-    {
-        "Bug" {$tasks = @("Investigation Task for Bug $id") ; break}
-        "Product Backlog Item" { $tasks = @("Design Task for PBI $id", "Development Task for PBI $id", "Write test Task for PBI $id", "Run tests Task for PBI $id", "Documentation Task for PBI $id"); break}
-        default { break}
-
-    }
-
-    $tasks 
-      
-}
-
 function Get-WorkItemsInIterationWithNoTask
 {
     param
@@ -174,8 +166,6 @@ function Get-WorkItemsInIterationWithNoTask
 
 
 $states = "'New', 'Approved'"  # comma separated
-$size = 0.9
-
 $workItems = Get-WorkItemsInIterationWithNoTask -tfsUri $collectionUrl -IterationPath $iterationPath -states $states -username $userUid -password $userPwd
 
 if (@($workItems).Count -gt 0)
@@ -186,11 +176,18 @@ if (@($workItems).Count -gt 0)
         # proceed
         foreach ($wi in $workItems)
         {
-            $taskItems = Get-StandardTask -wi $wi
-            Add-TasksToWorkItems -tfsUri $collectionUrl/$teamproject -id $wi.id -tasks $taskItems -IterationPath $iterationPath -size $size -username $userUid -password $userPwd
+            if ($taskTitles.ContainsKey($wi.WIT) -eq $false) 
+            {
+                Write-Error "Unknown work item type '$($wi.WIT)' found on backlog"
+                exit
+            } else
+            { 
+                $taskItems =$taskTitles.$($wi.WIT) |  ForEach-Object { [string]::Format($_, $wi.ID) }
+            }  
+            Add-TasksToWorkItems -tfsUri $collectionUrl/$teamproject -id $wi.id -tasks $taskItems -IterationPath $iterationPath -size $defaultsize -username $userUid -password $userPwd
         }
     }
 } else 
 {
-    write-host "No work items of type '$wit' in the iteration '$iterationPath' without existing tasks "
+    write-host "No work items in the iteration '$iterationPath' without existing tasks "
 }
