@@ -17,9 +17,9 @@
     "Product Backlog Item" =  @("Design Task for PBI {0}", "Development Task for PBI {0}", "Write test Task for PBI {0}", "Run tests Task for PBI {0}", "Documentation Task for PBI {0}", , "Deployment Task for PBI {0}")
     }, 
 
-    [parameter(Mandatory=$false,HelpMessage="Username of default credentials are not in use")]
+    [parameter(Mandatory=$false,HelpMessage="Username if default credentials are not in use")]
     $username,
-    [parameter(Mandatory=$false,HelpMessage="Password of default credentials are not in use")]
+    [parameter(Mandatory=$false,HelpMessage="Password if default credentials are not in use")]
     $password  
 
 )
@@ -138,7 +138,10 @@ function Get-WorkItemsInIterationWithNoTask
     $rootItems = @()
     $childItems = @()
     $parentItems = @()
-    
+    $ids = @()
+    $retItems = @()
+
+    # find all the items and group them
     foreach ($wi in $jsondata.workItemRelations)
     {
         if ($wi.rel -eq $null)
@@ -151,9 +154,19 @@ function Get-WorkItemsInIterationWithNoTask
         }
     }
 
-    $ids = (Compare-Object -ReferenceObject ($rootItems |  Sort-Object) -DifferenceObject ($parentItems | select -uniq |  Sort-Object)).InputObject
-    $retItems = @()
-
+    # Get everything with no children
+    if ($rootItems -ne $null)
+    {
+        if ($parentItems.count -eq 0)
+        {
+            $ids = $rootItems
+        } else 
+        {
+            $ids = (Compare-Object -ReferenceObject ($rootItems |  Sort-Object) -DifferenceObject ($parentItems | select -uniq |  Sort-Object)).InputObject
+        }
+    }
+  
+    # Get the details
     foreach ($id in $ids)
     {
         $item = Get-WorkItemDetails -tfsUri $tfsUri -id $id -username $username -password $password 
@@ -166,10 +179,9 @@ function Get-WorkItemsInIterationWithNoTask
 
 
 $states = "'New', 'Approved'"  # comma separated
-$workItems = Get-WorkItemsInIterationWithNoTask -tfsUri $collectionUrl -IterationPath $iterationPath -states $states -username $userUid -password $userPwd
+$workItems = Get-WorkItemsInIterationWithNoTask -tfsUri $collectionUrl -IterationPath $iterationPath -states $states -username $username -password $password
 
-if (@($workItems).Count -gt 0)
-{
+if (@($workItems).Count -gt 0){
     write-host "About to add standard Task work items to the following '$wit' in the iteration '$iterationPath' "
     $workItems|  Format-Table -Property @{ Name="ID"; Expression={$_.id}; Alignment="left"; } , WIT, Title
     if ((Read-Host "Are you Sure You Want To Proceed (Y/N)") -eq 'y') {
@@ -184,8 +196,7 @@ if (@($workItems).Count -gt 0)
             { 
                 $taskItems =$taskTitles.$($wi.WIT) |  ForEach-Object { [string]::Format($_, $wi.ID) }
             }  
-            Add-TasksToWorkItems -tfsUri $collectionUrl/$teamproject -id $wi.id -tasks $taskItems -IterationPath $iterationPath -size $defaultsize -username $userUid -password $userPwd
-        }
+            Add-TasksToWorkItems -tfsUri $collectionUrl/$teamproject -id $wi.id -tasks $taskItems -IterationPath $iterationPath -size $defaultsize -username $username -password $password        }
     }
 } else 
 {
