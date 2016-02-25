@@ -15,17 +15,24 @@
 
     [parameter(Mandatory=$false,HelpMessage="Allows the replacement of the standard tasks that are generated, provided as hashtable")]
     $taskTitles = @{ 
-    "Bug" = @("Investigation Task for Bug {0}", "Write test Task for Bug {0}", "Run tests Task for Bug {0}");
-    "Product Backlog Item" =  @("Design Task for PBI {0}", "Development Task for PBI {0}", "Write test Task for PBI {0}", "Run tests Task for PBI {0}", "Documentation Task for PBI {0}", , "Deployment Task for PBI {0}")
+    "Bug" =  (@{Title = "Investigation Task for Bug {0}"; Activity = "Development"},
+              @{Title = "Write test Task for Bug {0}"; Activity = "Testing"},
+              @{Title = "Run tests Task for Bug {0}"; Activity = "Testing"});
+    "Product Backlog Item" =  @(@{Title = "Design Task for PBI {0}"; Activity = "Design"},
+                                @{Title = "Development Task for PBI {0}"; Activity = "Development"}, 
+                                @{Title = "Write test Task for PBI {0}"; Activity = "Testing"}, 
+                                @{Title = "Run tests Task for PBI {0}"; Activity = "Testing"}, 
+                                @{Title = "Documentation Task for PBI {0}"; Activity = "Documentation"}, 
+                                @{Title = "Deployment Task for PBI {0}"; Activity = "Deployment"})
     }, 
     
     [parameter(Mandatory=$false,HelpMessage="Allows the replacement of the standard tasks states that are considered, provided as array")]
     $states = @('New', 'Approved'),
 
-    [parameter(Mandatory=$false,HelpMessage="Username if default credentials are not in use")]
+    [parameter(Mandatory=$false,HelpMessage="Username for use with Password (should be blank if using Personal Access Toekn or default credentials)")]
     $username,
     
-    [parameter(Mandatory=$false,HelpMessage="Password if default credentials are not in use")]
+    [parameter(Mandatory=$false,HelpMessage="Password or Personal Access Token (if blank default credentials are used)")]
     $password,  
 
     [parameter(Mandatory=$false,HelpMessage="If true then no confirmation messages will be provided, default to false")]
@@ -33,6 +40,32 @@
     
 )
 
+
+function Get-WebClient
+{
+ param
+    (
+        [string]$username, 
+        [string]$password,
+        [string]$ContentType = "application/json"
+    )
+
+    $wc = New-Object System.Net.WebClient
+    $wc.Headers["Content-Type"] = $ContentType
+    
+    if ([System.String]::IsNullOrEmpty($password))
+    {
+        $wc.UseDefaultCredentials = $true
+    } else 
+    {
+       $pair = "${username}:${password}"
+       $bytes = [System.Text.Encoding]::ASCII.GetBytes($pair)
+       $base64 = [System.Convert]::ToBase64String($bytes)
+       $wc.Headers.Add(“Authorization”,"Basic $base64");
+    }
+ 
+    $wc
+}
 
 function Add-TasksToWorkItems
 {
@@ -54,27 +87,19 @@ function Add-TasksToWorkItems
     foreach ($task in $tasks)
     {
   
-        $wc = New-Object System.Net.WebClient
-        $wc.Headers["Content-Type"] = "application/json-patch+json"
-        if ($username -eq $null)
-        {
-            $wc.UseDefaultCredentials = $true
-        } else 
-        {
-            $wc.Credentials = new-object System.Net.NetworkCredential($username, $password)
-        }
-   
-
+        $wc = Get-WebClient -username $username -password $password -ContentType "application/json-patch+json"
+        $title = [string]::Format($task.Title, $id) 
+              
         $uri = "$($tfsUri)/_apis/wit/workitems/`$Task?api-version=1.0"
-        $data = @(@{op = "add"; path = "/fields/System.Title"; value = "$task" } ; `
-                  @{op = "add"; path = "/fields/System.Description"; value = "$task" };  `
+        $data = @(@{op = "add"; path = "/fields/System.Title"; value = "$title" } ;   `
+                  @{op = "add"; path = "/fields/System.Description"; value = "$title" };  `
                   @{op = "add"; path = "/fields/Microsoft.VSTS.Scheduling.RemainingWork"; value = "$size" }  ;  `
                   @{op = "add"; path = "/fields/System.IterationPath"; value = "$IterationPath" }  ;  `
+                  @{op = "add"; path = "/fields/Microsoft.VSTS.Common.Activity"; value = "$task.Activity" }  ;  `
                   @{op = "add"; path = "/relations/-"; value = @{ "rel" = "System.LinkTypes.Hierarchy-Reverse" ; "url" = "$($tfsUri)/_apis/wit/workItems/$id"} }   ) | ConvertTo-Json
 
-        write-host "    Added '$task' " -ForegroundColor Green
-
-        $jsondata = $wc.UploadString($uri,"PATCH", $data) | ConvertFrom-Json 
+        write-host "    Added '$title' " -ForegroundColor Green
+        $jsondata = $wc.UploadString($uri,"POST", $data) | ConvertFrom-Json 
         #$jsondata
     }
 }
@@ -91,19 +116,10 @@ function Get-WorkItemDetails
     )
 
 
-    write-host "Getting details for WI '$id' via '$tfsUri' " -ForegroundColor Green
+    #write-host "Getting details for WI '$id' via '$tfsUri' " -ForegroundColor Green
 
-    $wc = New-Object System.Net.WebClient
-    $wc.Headers["Content-Type"] = "application/json"
-    if ($username -eq $null)
-    {
-        $wc.UseDefaultCredentials = $true
-    } else 
-    {
-        $wc.Credentials = new-object System.Net.NetworkCredential($username, $password)
-    }
+    $wc = Get-WebClient -username $username -password $password
    
-
     $uri = "$($tfsUri)/_apis/wit/workitems/$id"
 
     $jsondata = $wc.DownloadString($uri) | ConvertFrom-Json 
@@ -124,17 +140,9 @@ function Get-WorkItemsInIterationWithNoTask
     )
 
   
-    $wc = New-Object System.Net.WebClient
-    $wc.Headers["Content-Type"] = "application/json"
-    if ($username -eq $null)
-    {
-        $wc.UseDefaultCredentials = $true
-    } else 
-    {
-        $wc.Credentials = new-object System.Net.NetworkCredential($username, $password)
-    }
-    
-    write-host "Getting Backlog Items`n   under '$iterationpath'`n   from '$tfsUri'`n   in the state(s) of '$($states -join ', ')'`n   that have no child tasks and are " -ForegroundColor Green
+    $wc = Get-WebClient -username $username -password $password
+       
+    write-host "Getting Backlog Items`n   under '$iterationpath'`n   from '$tfsUri'`n   in the state(s) of '$($states -join ', ')' that have no child tasks`n" -ForegroundColor Green
 
     $uri = "$($tfsUri)/_apis/wit/wiql?api-version=1.0"
     $wiq = "SELECT [System.Id], [System.Links.LinkType], [System.WorkItemType], [System.Title], [System.AssignedTo], [System.State], [System.Tags] FROM WorkItemLinks WHERE (  [Source].[System.State] IN (""$($states -join '", "')"")  AND  [Source].[System.IterationPath] UNDER '$iterationpath') And ([System.Links.LinkType] <> '') And ([Target].[System.WorkItemType] = 'Task') ORDER BY [System.Id] mode(MayContain)"
@@ -190,8 +198,9 @@ function Get-WorkItemsInIterationWithNoTask
 # Get the work items
 $workItems = Get-WorkItemsInIterationWithNoTask -tfsUri $collectionUrl -IterationPath $iterationPath -states $states -username $username -password $password
 
-if (@($workItems).Count -gt 0){
-    write-host "About to add standard Task work items to the following '$wit' in the iteration '$iterationPath' "
+if (@($workItems).Count -gt 0)
+{
+    write-host "About to add standard Task work items to the following work items in the iteration '$iterationPath' "
     $workItems|  Format-Table -Property @{ Name="ID"; Expression={$_.id}; Alignment="left"; } , WIT, Title
     if (($force -eq $true) -or ((Read-Host "Are you Sure You Want To Proceed (Y/N)") -eq 'y')) {
         # proceed
@@ -203,9 +212,10 @@ if (@($workItems).Count -gt 0){
                 exit
             } else
             { 
-                $taskItems =$taskTitles.$($wi.WIT) |  ForEach-Object { [string]::Format($_, $wi.ID) }
+                $taskItems =$taskTitles.$($wi.WIT) 
             }  
-            Add-TasksToWorkItems -tfsUri $collectionUrl/$teamproject -id $wi.id -tasks $taskItems -IterationPath $iterationPath -size $defaultsize -username $username -password $password        }
+            Add-TasksToWorkItems -tfsUri $collectionUrl/$teamproject -id $wi.id -tasks $taskItems -IterationPath $iterationPath -size $defaultsize -username $username -password $password
+        }
     }
 } else 
 {
