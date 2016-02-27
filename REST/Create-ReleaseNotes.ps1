@@ -28,21 +28,20 @@
 [CmdletBinding()]
 param (
 
-   # top five should really be mandatory, but user experience better with the read-host
-    [parameter(Mandatory=$false,HelpMessage="URL of the Team Project Collection e.g. 'http://myserver:8080/tfs/defaultcollection'")]
-    $collectionUrl = $(Read-Host -prompt "URL of the Team Project Collection e.g. 'http://myserver:8080/tfs/defaultcollection'"),
+    [parameter(Mandatory=$true,HelpMessage="URL of the Team Project Collection e.g. 'http://myserver:8080/tfs/defaultcollection'")]
+    $collectionUrl,
     
-    [parameter(Mandatory=$false,HelpMessage="Team Project name e.g. 'My Team project'")]
-    $teamproject  = $(Read-Host -prompt "Team Project name e.g. 'My Team project'"),
+    [parameter(Mandatory=$true,HelpMessage="Team Project name e.g. 'My Team project'")]
+    $teamproject  ,
   
-    [parameter(Mandatory=$false,HelpMessage="Build definition name")]
-    $defname = $(Read-Host -prompt "Build definition name"),
+    [parameter(Mandatory=$true,HelpMessage="Build definition name")]
+    $defname ,
 
-    [parameter(Mandatory=$false,HelpMessage="The markdown output file")]
-    $outputfile = $(Read-Host -prompt "The markdown output file"),
+    [parameter(Mandatory=$true,HelpMessage="The markdown output file")]
+    $outputfile ,
 
-    [parameter(Mandatory=$false,HelpMessage="The markdown template file")]
-    $templatefile = $(Read-Host -prompt "The markdown template file"),
+    [parameter(Mandatory=$true,HelpMessage="The markdown template file")]
+    $templatefile ,
 
     [parameter(Mandatory=$false,HelpMessage="Specific build to create report for. If blank last successful build used")]
     $buildnumber,
