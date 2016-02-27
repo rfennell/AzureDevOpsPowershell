@@ -1,14 +1,18 @@
-﻿param
+﻿##-----------------------------------------------------------------------
+## <copyright file="Add-StandardBacklogTasks.ps1">(c) Richard Fennell. </copyright>
+##-----------------------------------------------------------------------
+# Create a standard list of task to a backlog item in an iteration
+
+param
 (
-    # top three should really be mandatory, but user experience better with the read-host
-    [parameter(Mandatory=$false,HelpMessage="URL of the Team Project Collection e.g. 'http://myserver:8080/tfs/defaultcollection'")]
-    $collectionUrl = $(Read-Host -prompt "URL of the Team Project Collection e.g. 'http://myserver:8080/tfs/defaultcollection'"),
+    [parameter(Mandatory=$true,HelpMessage="URL of the Team Project Collection e.g. 'http://myserver:8080/tfs/defaultcollection'")]
+    $collectionUrl,
     
-    [parameter(Mandatory=$false,HelpMessage="Team Project name e.g. 'My Team project'")]
-    $teamproject  = $(Read-Host -prompt "Team Project name e.g. 'My Team project'"),
+    [parameter(Mandatory=$true,HelpMessage="Team Project name e.g. 'My Team project'")]
+    $teamproject ,
     
-    [parameter(Mandatory=$false,HelpMessage="Backlog iteration e.g. 'My Team project\Backlog'")]
-    $iterationPath = $(Read-Host -prompt "Backlog iteration e.g. 'My Team project\Backlog'"),
+    [parameter(Mandatory=$true,HelpMessage="Backlog iteration e.g. 'My Team project\Backlog'")]
+    $iterationPath ,
 
     [parameter(Mandatory=$false,HelpMessage="Default work remaining for a task, could uses a strange number so it is easy to notice it is defaulted")]
 	$defaultsize = 0 , 
