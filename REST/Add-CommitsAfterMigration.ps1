@@ -1,4 +1,9 @@
-﻿param
+﻿##-----------------------------------------------------------------------
+## <copyright file="Add-CommitsAfterMigration.ps1">(c) Richard Fennell. </copyright>
+##-----------------------------------------------------------------------
+# Script to assist in the migration between two TFS based Git repos
+
+param
 (
     [parameter(Mandatory=$true,HelpMessage="URL of the source Team Project Collection e.g. 'http://myserver:8080/tfs/defaultcollection'")]
     $sourceCollectionUrl ,
@@ -36,11 +41,12 @@ function Get-WebClient
  param
     (
         [string]$username, 
-        [string]$password
+        [string]$password,
+        [string]$ContentType = "application/json"
     )
 
     $wc = New-Object System.Net.WebClient
-    $wc.Headers["Content-Type"] = "application/json"
+    $wc.Headers["Content-Type"] = $ContentType
     
     if ([System.String]::IsNullOrEmpty($password))
     {
