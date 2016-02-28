@@ -192,6 +192,15 @@ function Get-WorkItemDetail
     $jsondata 
 }
 
+function render() {
+    [CmdletBinding()]
+    param ( [parameter(ValueFromPipeline = $true)] [string] $str)
+
+    #buggy in V4 seems ok in older and newer
+    #$ExecutionContext.InvokeCommand.ExpandString($str)
+
+    "@`"`n$str`n`"@" | iex
+}
 
 Write-Verbose "Getting details of build [$defname] from server [$collectionUrl/$teamproject]"
 $defId = Get-BuildDefinitionId -tfsUri $collectionUrl -teamproject $teamproject -defname $defname -username $username -password $password
@@ -240,7 +249,7 @@ ForEach ($line in $template)
            # Get the work item details
            Write-Verbose "   Get details of workitem $($wi.id)"
            $widetail = Get-WorkItemDetail -url $wi.url -username $username -password $password 
-           $out += $ExecutionContext.InvokeCommand.ExpandString($line)
+           $out += $line | render
         }
         continue
         }
@@ -249,13 +258,13 @@ ForEach ($line in $template)
         {
            # we can get enough detail from the list of changes
            Write-Verbose "   Get details of changeset/commit $($csdetail.id)"
-           $out += $ExecutionContext.InvokeCommand.ExpandString($line)
+           $out += $line | render
         }
         continue
         }
      "BODY" {
         # nothing to expand just process the line
-        $out += $ExecutionContext.InvokeCommand.ExpandString($line)
+        $out += $line | render
         }
     }
 }
