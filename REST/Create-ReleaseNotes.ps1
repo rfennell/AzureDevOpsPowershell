@@ -216,7 +216,7 @@ if (([System.String]::IsNullOrEmpty($buildnumber)) -or ($buildnumber -eq "<Laste
 }
 
 $workitems = Get-BuildWorkItems -tfsUri $collectionUrl -teamproject $teamproject -buildid $build.id -username $username -password $password
-$changsets = Get-BuildChangeSets -tfsUri $collectionUrl -teamproject $teamproject -buildid $build.id -username $username -password $password
+$changesets = Get-BuildChangeSets -tfsUri $collectionUrl -teamproject $teamproject -buildid $build.id -username $username -password $password
 
 $template = Get-Content $templatefile
 Add-Type -TypeDefinition @"
@@ -256,7 +256,7 @@ ForEach ($line in $template)
         continue
         }
       "CS" {
-        foreach ($csdetail in $changsets)
+        foreach ($csdetail in $changesets)
         {
            # we can get enough detail from the list of changes
            Write-Verbose "   Get details of changeset/commit $($csdetail.id)"
