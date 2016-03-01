@@ -178,21 +178,7 @@ function Get-BuildChangeSets
 }
 
 
-function Get-WorkItemDetail
-{
-    param
-    (
-    $url,
-    $username,
-    $password
-    )
-
-    $wc = Get-WebClient -username $username -password $password
-    $jsondata = $wc.DownloadString($url) | ConvertFrom-Json 
-    $jsondata 
-}
-
-function Get-ChangesetDetail
+function Get-Detail
 {
     param
     (
@@ -263,7 +249,7 @@ ForEach ($line in $template)
         {
            # Get the work item details
            Write-Verbose "   Get details of workitem $($wi.id)"
-           $widetail = Get-WorkItemDetail -url $wi.url -username $username -password $password 
+           $widetail = Get-Detail -url $wi.url -username $username -password $password 
            $out += $line | render
            $out += "`n"
         }
@@ -274,7 +260,7 @@ ForEach ($line in $template)
         {
            # we can get enough detail from the list of changes
            Write-Verbose "   Get details of changeset/commit $($cs.id)"
-           $csdetail = Get-ChangesetDetail -url $cs.location -username $username -password $password 
+           $csdetail = Get-Detail -url $cs.location -username $username -password $password 
            $out += $line | render
            $out += "`n"
         }
