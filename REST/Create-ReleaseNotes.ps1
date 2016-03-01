@@ -192,6 +192,20 @@ function Get-WorkItemDetail
     $jsondata 
 }
 
+function Get-ChangesetDetail
+{
+    param
+    (
+    $url,
+    $username,
+    $password
+    )
+
+    $wc = Get-WebClient -username $username -password $password
+    $jsondata = $wc.DownloadString($url) | ConvertFrom-Json 
+    $jsondata 
+}
+
 function render() {
     [CmdletBinding()]
     param ( [parameter(ValueFromPipeline = $true)] [string] $str)
@@ -256,10 +270,11 @@ ForEach ($line in $template)
         continue
         }
       "CS" {
-        foreach ($csdetail in $changesets)
+        foreach ($cs in $changesets)
         {
            # we can get enough detail from the list of changes
-           Write-Verbose "   Get details of changeset/commit $($csdetail.id)"
+           Write-Verbose "   Get details of changeset/commit $($cs.id)"
+           $csdetail = Get-ChangesetDetail -url $cs.location -username $username -password $password 
            $out += $line | render
            $out += "`n"
         }

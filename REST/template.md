@@ -10,5 +10,6 @@
   
 ###Associated change sets/commits  
 @@CSLOOP@@  
-* **ID $($csdetail.id)** $($csdetail.message)    
+* **ID $($csdetail.changesetid)$($csdetail.commitid)** $($csdetail.comment)    
 @@CSLOOP@@  
+
