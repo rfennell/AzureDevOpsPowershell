@@ -9,4 +9,4 @@ Going forward I will place all the code samples in use in blog posts here.
 ### REST API
 * REST versions of scripts to assist in the migration between TFS instances [as detailed in this post](https://www.microsoft.com/en-gb/developers/articles/week03aug14/migrating-a-tfs-tfvc-based-team-project-to-a-git-team-project/)
 * Script to create a standard set of tasks for backlog items in an iteration
-* Script to create releases notes for a build in markdown
+* Script to create releases notes for a build in markdown [as detailed in this post)[http://blogs.blackmarble.co.uk/blogs/rfennell/post/2016/03/01/A-vNext-build-task-and-PowerShell-script-to-generate-release-notes-as-part-of-TFS-vNext-build.aspx]
