@@ -91,17 +91,16 @@ function Add-TasksToWorkItems
 
     foreach ($task in $tasks)
     {
-  
         $wc = Get-WebClient -username $username -password $password -ContentType "application/json-patch+json"
         $title = [string]::Format($task.Title, $id) 
-              
+        $activity = $task.Activity
         $uri = "$($tfsUri)/_apis/wit/workitems/`$Task?api-version=1.0"
         $data = @(@{op = "add"; path = "/fields/System.Title"; value = "$title" } ;   `
                   @{op = "add"; path = "/fields/System.Description"; value = "$title" };  `
                   @{op = "add"; path = "/fields/Microsoft.VSTS.Scheduling.RemainingWork"; value = "$size" }  ;  `
                   @{op = "add"; path = "/fields/System.IterationPath"; value = "$IterationPath" }  ;  `
                   @{op = "add"; path = "/fields/System.AreaPath"; value = "$AreaPath" }  ;  `
-                  @{op = "add"; path = "/fields/Microsoft.VSTS.Common.Activity"; value = "$task.Activity" }  ;  `
+                  @{op = "add"; path = "/fields/Microsoft.VSTS.Common.Activity"; value = "$Activity" }  ;  `
                   @{op = "add"; path = "/relations/-"; value = @{ "rel" = "System.LinkTypes.Hierarchy-Reverse" ; "url" = "$($tfsUri)/_apis/wit/workItems/$id"} }   ) | ConvertTo-Json
 
         write-host "    Added '$title' " -ForegroundColor Green
