@@ -17,7 +17,7 @@ param
     [parameter(Mandatory=$false,HelpMessage="Default work remaining for a task, could uses a strange number so it is easy to notice it is defaulted")]
 	$defaultsize = 0 , 
 
-    [parameter(Mandatory=$false,HelpMessage="Allows the replacement of the standard tasks that are generated, provided as hashtable")]
+    [parameter(Mandatory=$false,HelpMessage="Allows the replacement of the standard tasks that are generated, provided as hashtable. If you don't wish to set an activity type leave the value empty'")]
     $taskTitles = @{ 
     "Bug" =  (@{Title = "Investigation Task for Bug {0}"; Activity = "Development"},
               @{Title = "Write test Task for Bug {0}"; Activity = "Testing"},
@@ -77,6 +77,7 @@ function Add-TasksToWorkItems
     (
         $tfsUri ,
         $IterationPath,
+        $AreaPath,
         $id,
         $tasks,
         $size,
@@ -99,6 +100,7 @@ function Add-TasksToWorkItems
                   @{op = "add"; path = "/fields/System.Description"; value = "$title" };  `
                   @{op = "add"; path = "/fields/Microsoft.VSTS.Scheduling.RemainingWork"; value = "$size" }  ;  `
                   @{op = "add"; path = "/fields/System.IterationPath"; value = "$IterationPath" }  ;  `
+                  @{op = "add"; path = "/fields/System.AreaPath"; value = "$AreaPath" }  ;  `
                   @{op = "add"; path = "/fields/Microsoft.VSTS.Common.Activity"; value = "$task.Activity" }  ;  `
                   @{op = "add"; path = "/relations/-"; value = @{ "rel" = "System.LinkTypes.Hierarchy-Reverse" ; "url" = "$($tfsUri)/_apis/wit/workItems/$id"} }   ) | ConvertTo-Json
 
@@ -192,8 +194,10 @@ function Get-WorkItemsInIterationWithNoTask
    foreach ($id in $ids)
     {
         $item = Get-WorkItemDetails -tfsUri $tfsUri -id $id -username $username -password $password 
-        $retItems += $item | Select-Object id, @{ Name = 'WIT' ;Expression ={$_.fields.'System.WorkItemType'}} , @{ Name = 'Title' ;Expression ={$_.fields.'System.Title'}}
-
+        $retItems += $item | Select-Object id, 
+                                           @{ Name = 'WIT' ;Expression ={$_.fields.'System.WorkItemType'}} , 
+                                           @{ Name = 'Title' ;Expression ={$_.fields.'System.Title'}}, 
+                                           @{ Name = 'Fields' ; Expression ={$_.fields}}
     }
 
     $retItems
@@ -201,11 +205,10 @@ function Get-WorkItemsInIterationWithNoTask
 
 # Get the work items
 $workItems = Get-WorkItemsInIterationWithNoTask -tfsUri $collectionUrl -IterationPath $iterationPath -states $states -username $username -password $password
-
 if (@($workItems).Count -gt 0)
 {
     write-host "About to add standard Task work items to the following work items in the iteration '$iterationPath' "
-    $workItems|  Format-Table -Property @{ Name="ID"; Expression={$_.id}; Alignment="left"; } , WIT, Title
+    $workItems|  Format-Table -Property @{ Name="ID"; Expression={$_.id}; Alignment="left"; } , WIT, Title, @{ Name="AreaPath"; Expression={$_.Fields.'System.AreaPath'}; Alignment="left"; } 
     if (($force -eq $true) -or ((Read-Host "Are you Sure You Want To Proceed (Y/N)") -eq 'y')) {
         # proceed
         foreach ($wi in $workItems)
@@ -218,7 +221,7 @@ if (@($workItems).Count -gt 0)
             { 
                 $taskItems =$taskTitles.$($wi.WIT) 
             }  
-            Add-TasksToWorkItems -tfsUri $collectionUrl/$teamproject -id $wi.id -tasks $taskItems -IterationPath $iterationPath -size $defaultsize -username $username -password $password
+            Add-TasksToWorkItems -tfsUri $collectionUrl/$teamproject -id $wi.id -tasks $taskItems -IterationPath $iterationPath -AreaPath $wi.Fields.'System.AreaPath' -size $defaultsize -username $username -password $password
         }
     }
 } else 
