@@ -1,4 +1,24 @@
-﻿param
+# Usage
+# TCMReplacement.ps1
+#      -Collectionuri http://tfsserver.domain.com:8080/tfs/defaultcollection/ 
+#      -Teamproject "My Project"
+#      -testplanname "My test plan"  
+#      -testsuitename "Automated tests" 
+#      -configurationname "Windows 8" 
+#      -buildid  12345
+#      -environmentName "Lab V.2.0"  
+#      -testsettingsname "Test Setting" 
+#      -testrunname "Smoke Tests" 
+#      -testcontroller "mytestcontroller.domain.com"
+#      -releaseUri "vstfs:///ReleaseManagement/Release/167" 
+#      -releaseenvironmenturi "vstfs:///ReleaseManagement/Environment/247"
+#
+# Notes on usage
+# The last two parameters are optional, all the others are required. If the last two are not used the test results will not be associated with a release
+# The is also a pollinginterval parameter which default to 10 seconds. The script starts a test run then polls on this interval to see if it has completed.
+# See http://blogs.blackmarble.co.uk/blogs/rfennell/post/2016/06/10/Running-Test-Suites-within-a-network-Isolated-Lab-Management-environment-when-using-TFS-vNext-build-and-release-tooling
+
+param
 (
     [Parameter(Mandatory)]
     $collectionuri ,
