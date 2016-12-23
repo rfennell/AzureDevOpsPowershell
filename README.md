@@ -15,4 +15,4 @@ There is more in the repo, as it is a bit of a catch all, but the items linked t
 * Running Test Suites within a network Isolated Lab Management environment when using TFS vNext build and release tooling [as detailed in this post](http://blogs.blackmarble.co.uk/blogs/rfennell/post/2016/09/27/Running-Test-Suites-within-a-network-Isolated-Lab-Management-environment-when-using-TFS-vNext-build-and-release-tooling)
 
 ### JAVA
-* Accessing TFS work item tags via the API [as detailed in the post](http://blogs.blackmarble.co.uk/blogs/rfennell/post/2013/05/03/Accessing-TFS-work-item-tags-via-the-API]
+* Accessing TFS work item tags via the API [as detailed in the post](http://blogs.blackmarble.co.uk/blogs/rfennell/post/2013/05/03/Accessing-TFS-work-item-tags-via-the-API)
