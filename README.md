@@ -13,3 +13,6 @@ There is more in the repo, as it is a bit of a catch all, but the items linked t
 * Script to create a standard set of tasks for backlog items in an iteration
 * Script to create releases notes for a build in markdown [as detailed in this post](http://blogs.blackmarble.co.uk/blogs/rfennell/post/2016/03/01/A-vNext-build-task-and-PowerShell-script-to-generate-release-notes-as-part-of-TFS-vNext-build.aspx)
 * Running Test Suites within a network Isolated Lab Management environment when using TFS vNext build and release tooling [as detailed in this post](http://blogs.blackmarble.co.uk/blogs/rfennell/post/2016/09/27/Running-Test-Suites-within-a-network-Isolated-Lab-Management-environment-when-using-TFS-vNext-build-and-release-tooling)
+
+### JAVA
+* Getting going with the JAVA API [as detailed in the post](http://blogs.blackmarble.co.uk/blogs/rfennell/post/2013/05/04/Getting-going-with-the-TFS-Java-API]
