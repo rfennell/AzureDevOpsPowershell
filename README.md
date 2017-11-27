@@ -1,5 +1,5 @@
 # VSTS Powershell
-A selection of PowerShell scripts that make use of the TFS/VSTS APIs, both the older .NET and Java ones and the prefered current REST API
+A selection of PowerShell scripts that make use of the TFS/VSTS APIs, both the older .NET and Java ones and the prefered current REST API. If you are looking for the source for my VSTS Build Extensions you are in the wrong repo, [look here](https://github.com/rfennell/vNextBuild/wiki)
 
 I had intended, going forward, to place all the code samples in use in blog posts here. However I have since found it eaiser to use [Gists](https://gist.github.com/rfennell)
 
