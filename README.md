@@ -1,11 +1,11 @@
-# VSTS Powershell
+# Azure DevOps Powershell
 A selection of PowerShell scripts that make use of the TFS/VSTS APIs, both the older .NET and Java ones and the prefered current REST API. If you are looking for the source for my VSTS Build Extensions you are in the wrong repo, [look here in the vNextBuild repo](https://github.com/rfennell/vNextBuild/wiki)
 
 I had intended, going forward, to place all the code samples in use in blog posts here. However I have since found it eaiser to use [Gists](https://gist.github.com/rfennell)
 
 There is more in the repo, as it is a bit of a catch all, but the items linked to from posts are as follows
 
-### .NET API
+### .NET API (this API is being depricated)
 * Scripts to assist in the migration between TFS instances [as detailed in this post](https://www.microsoft.com/en-gb/developers/articles/week03aug14/migrating-a-tfs-tfvc-based-team-project-to-a-git-team-project/)
 
 ### REST API
