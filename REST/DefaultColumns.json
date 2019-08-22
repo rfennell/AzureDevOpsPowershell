@@ -1,0 +1,82 @@
+﻿[
+        {
+            "id": "XXX",
+            "name": "New",
+            "itemLimit": 0,
+            "stateMappings": {
+                "Change Request": "New",
+                "Product Backlog Item": "New",
+                "Bug": "New"
+            },
+            "columnType": "incoming"
+        },
+        {
+            "name": "Under Review",
+            "itemLimit": 0,
+            "stateMappings": {
+                "Change Request": "New",
+                "Product Backlog Item": "New",
+                "Bug": "New"
+            },
+            "columnType": "incoming"
+        },
+        {
+            "name": "Approved",
+            "itemLimit": 5,
+            "stateMappings": {
+                "Change Request": "Approved",
+                "Product Backlog Item": "Approved",
+                "Bug": "Approved"
+            },
+            "isSplit": false,
+            "description": "",
+            "columnType": "inProgress"
+        },
+        {
+            "name": "Committed",
+            "itemLimit": 5,
+            "stateMappings": {
+                "Change Request": "Committed",
+                "Product Backlog Item": "Committed",
+                "Bug": "Committed"
+            },
+            "isSplit": false,
+            "description": "",
+            "columnType": "inProgress"
+        },
+        {
+            "name": "QA Test",
+            "itemLimit": 5,
+            "stateMappings": {
+                "Change Request": "In Test",
+                "Product Backlog Item": "In Test",
+                "Bug": "In Test"
+            },
+            "isSplit": false,
+            "description": "",
+            "columnType": "inProgress"
+        },
+           {
+            "name": "Client Test",
+            "itemLimit": 5,
+            "stateMappings": {
+                "Change Request": "In Test",
+                "Product Backlog Item": "In Test",
+                "Bug": "In Test"
+            },
+            "isSplit": false,
+            "description": "",
+            "columnType": "inProgress"
+        },
+        {
+            "id": "XXX",
+            "name": "Done",
+            "itemLimit": 0,
+            "stateMappings": {
+                "Change Request": "Done",
+                "Product Backlog Item": "Done",
+                "Bug": "Done"
+            },
+            "columnType": "outgoing"
+        }
+]
