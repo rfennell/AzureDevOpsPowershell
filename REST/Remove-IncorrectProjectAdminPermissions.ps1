@@ -1,8 +1,8 @@
 ﻿<#
 .SYNOPSIS
-  Fix missing permissions for Project Administrators
+  Removes excess permissions for Project Administrators
 .DESCRIPTION
-  Script to make sure the '[My project]Project Administrators' group has permissions in their own project
+  Script to make sure the '[My project]Project Administrators' groups only have permissions in their own project
   Used to correct permissions for projects that have been migrated to Azure DevOps Services and are missing this permission
 .PARAMETER Pat
     An Azure DevOps PAT with administrator permissions for all projects in the organisation
@@ -17,15 +17,11 @@
 .NOTES
   Version:        1.0
   Author:         Richard Fennell, Black Marble
-  Creation Date:  28th Sep 2020
-  Purpose/Change: Initial script development
-  Version:        1.1
-  Author:         Richard Fennell, Black Marble
   Creation Date:  7th Oct 2020
-  Purpose/Change: Adds Whatif
+  Purpose/Change: Initial script development
   
 .EXAMPLE
-  Update-ProjectAdminPermissions -pat a1b2c3d4e5f6g7h8i9j0k1l2m3 -organisation MyOrg -Whatf
+  Remove-IncorrectProjectAdminPermissions -pat a1b2c3d4e5f6g7h8i9j0k1l2m3 -organisation MyOrg -Whatif
 #>
 
 [CmdletBinding(SupportsShouldProcess=$true)]
@@ -93,17 +89,16 @@ param
  
  $body = @{
     token = "repoV2/$projectId/";  # the token is based on the project ID see https://github.com/Azure/azure-devops-cli-extension/blob/master/doc/security_tokens.md
-    merge = 'true';
+    merge = 'false';  # needs to be false to remove permission.
     accessControlEntries = @(@{
        descriptor = "$descriptor"; # the descriptor defines the account to add permissions for
-       allow = 32638;  # a bit flag representation of all the permissions (found using F12 tools)
+       allow = 0;  # a bit flag representation of all the permissions (found using F12 tools) zero removes the permission
        deny = 0;
     })
   }
   $jsonBody = ConvertTo-Json $body
   $wc = New-WebClient -pat $pat
 
-  write-host "Updating permissions for: $name"
   $response = $wc.UploadString($uri, "POST", $jsonBody) 
 }
 
@@ -112,7 +107,7 @@ function Get-Projects {
 param
 (
   $pat,
-  $organiation
+  $organisation
 )
 
   $uri = "https://dev.azure.com/$organisation/_apis/projects?api-version=6.0"
@@ -126,16 +121,49 @@ param
 
 }
 
+function Get-ActivePermissionsInProject {
+param
+(
+  $pat,
+  $organisation,
+  $project
+)
+
+  $uri = "https://dev.azure.com/$organisation/_apis/accesscontrollists/2e9eb7ed-3c0a-47d4-87c1-0ffdd275fd87?token=repoV2/$($project.id)&api-version=6.0"
+
+  $wc = New-WebClient -pat $pat
+
+  write-host "Getting list of the permissions for project '$($project.name)' in the organisation '$organisation'"
+  $response = $wc.DownloadString($uri) | ConvertFrom-Json
+
+  return $response.value 
+
+}
+
 # Get the list of projects in the organisation
 $projects =  Get-Projects -pat $pat -organisation $organisation
+
 # Get the list of `Project Administrators` security objects
 $projectAdmins = Get-ProjectAdmins -pat $pat -organisation $organisation
 
-ForEach( $projectAdmin in $projectAdmins) {
-   # find the project id via the providerDisplayName which is in the form `[My Project]Project Adminstrators'
-   $project = $projects | where-object { $_.name -eq $projectAdmin.providerDisplayName.SubString(1,$projectAdmin.providerDisplayName.IndexOf(']')-1)}
-   # Update the permissions
-   if($PSCmdlet.ShouldProcess($projectAdmin.providerDisplayName, "Add permissions for identity")){
-      Update-AllRepositoriesPermissions -pat $pat -organisation $organisation -descriptor $projectAdmin.descriptor -name $projectAdmin.providerDisplayname -projectId $project.id
-   }
+
+ForEach( $project in $projects) {
+    
+    $perms = Get-ActivePermissionsInProject -pat $pat -organisation $organisation -project $project
+
+    # find the admins who should not be in this project
+    $invalidAdminsForProject = $projectAdmins | where-object { $_.providerDisplayName -ne "[$($project.name)]\Project Administrators"}  
+    
+    foreach ($perm in $perms.acesDictionary.PsObject.Properties.value) {
+        $extraPermissions = $invalidAdminsForProject | Where-Object {$_.descriptor -eq  $perm.descriptor} 
+        foreach ($extraPermission in $extraPermissions) {
+           if($PSCmdlet.ShouldProcess($extraPermission.providerDisplayName, "Remove permissions for identity")){
+               # comment out this line if you only want to view the excess permissions
+               Update-AllRepositoriesPermissions -pat $pat -organisation $organisation -descriptor $extraPermission.descriptor -name $extraPermission.providerDisplayname -projectId $project.id
+               write-host "The permission '$($extraPermission.providerDisplayName)' has been removed"
+           }
+        }
+    }
+    
 }
+
