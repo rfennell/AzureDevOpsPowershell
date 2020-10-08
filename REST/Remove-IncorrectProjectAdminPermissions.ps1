@@ -8,6 +8,8 @@
     An Azure DevOps PAT with administrator permissions for all projects in the organisation
 .PARAMETER Organisation
     the Azure DevOps organisation e.g. 'myorg' from 'https://dev.azure.com/myorg'
+.PARAMETER ProjectName
+    A single project name to limit the scope of the script
 .PARAMETER WhatIf
     if set will only list the identities without updating permissions
 .INPUTS
@@ -19,9 +21,13 @@
   Author:         Richard Fennell, Black Marble
   Creation Date:  7th Oct 2020
   Purpose/Change: Initial script development
+  Version:        1.1
+  Author:         Richard Fennell, Black Marble
+  Creation Date:  8th Oct 2020
+  Purpose/Change: Add a filter for a single project
   
 .EXAMPLE
-  Remove-IncorrectProjectAdminPermissions -pat a1b2c3d4e5f6g7h8i9j0k1l2m3 -organisation MyOrg -Whatif
+  Remove-IncorrectProjectAdminPermissions -pat a1b2c3d4e5f6g7h8i9j0k1l2m3 -organisation MyOrg -projectName myproj-Whatif
 #>
 
 [CmdletBinding(SupportsShouldProcess=$true)]
@@ -31,7 +37,11 @@ param
   [string]$Pat,
     
   [parameter(Mandatory=$true,HelpMessage="The Azure DevOps organisation e.g. 'myorg' from 'https://dev.azure.com/myorg'")]
-  [string]$Organisation
+  [string]$Organisation,
+
+  [parameter(Mandatory=$false,HelpMessage="A single project name to limit the scope of the script")]
+  [string]$ProjectName = ""
+
 )
 
 # Creates a REST client
@@ -140,8 +150,19 @@ param
 
 }
 
-# Get the list of projects in the organisation
 $projects =  Get-Projects -pat $pat -organisation $organisation
+
+if ($ProjectName.Length -gt 0 ) {
+    $projects = $projects | Where-Object { $_.name -eq $ProjectName}
+
+    # check we found it
+    if ($projects.name -eq $projectname) {
+       write-host "Limiting the project to update to the single project '$projectname'"
+    } else {
+       write-host "Cannot find the requested project'$projectname'"
+       return
+    }
+}
 
 # Get the list of `Project Administrators` security objects
 $projectAdmins = Get-ProjectAdmins -pat $pat -organisation $organisation

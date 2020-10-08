@@ -8,6 +8,8 @@
     An Azure DevOps PAT with administrator permissions for all projects in the organisation
 .PARAMETER Organisation
     the Azure DevOps organisation e.g. 'myorg' from 'https://dev.azure.com/myorg'
+.PARAMETER ProjectName
+    A single project name to limit the scope of the script
 .PARAMETER WhatIf
     if set will only list the identities without updating permissions
 .INPUTS
@@ -23,6 +25,10 @@
   Author:         Richard Fennell, Black Marble
   Creation Date:  7th Oct 2020
   Purpose/Change: Adds Whatif
+  Version:        1.2
+  Author:         Richard Fennell, Black Marble
+  Creation Date:  8th Oct 2020
+  Purpose/Change: Add a filter for a single project
   
 .EXAMPLE
   Update-ProjectAdminPermissions -pat a1b2c3d4e5f6g7h8i9j0k1l2m3 -organisation MyOrg -Whatf
@@ -35,7 +41,10 @@ param
   [string]$Pat,
     
   [parameter(Mandatory=$true,HelpMessage="The Azure DevOps organisation e.g. 'myorg' from 'https://dev.azure.com/myorg'")]
-  [string]$Organisation
+  [string]$Organisation,
+
+  [parameter(Mandatory=$false,HelpMessage="A single project name to limit the scope of the script")]
+  [string]$ProjectName = ""
 )
 
 # Creates a REST client
@@ -128,14 +137,29 @@ param
 
 # Get the list of projects in the organisation
 $projects =  Get-Projects -pat $pat -organisation $organisation
+
+if ($ProjectName.Length -gt 0 ) {
+    $projects = $projects | Where-Object { $_.name -eq $ProjectName}
+
+    # check we found it
+    if ($projects.name -eq $projectname) {
+       write-host "Limiting the project to update to the single project '$projectname'"
+    } else {
+       write-host "Cannot find the requested project'$projectname'"
+       return
+    }
+}
+
 # Get the list of `Project Administrators` security objects
 $projectAdmins = Get-ProjectAdmins -pat $pat -organisation $organisation
 
 ForEach( $projectAdmin in $projectAdmins) {
    # find the project id via the providerDisplayName which is in the form `[My Project]Project Adminstrators'
    $project = $projects | where-object { $_.name -eq $projectAdmin.providerDisplayName.SubString(1,$projectAdmin.providerDisplayName.IndexOf(']')-1)}
-   # Update the permissions
-   if($PSCmdlet.ShouldProcess($projectAdmin.providerDisplayName, "Add permissions for identity")){
-      Update-AllRepositoriesPermissions -pat $pat -organisation $organisation -descriptor $projectAdmin.descriptor -name $projectAdmin.providerDisplayname -projectId $project.id
+   # Update the permissions if there is a matching project
+   if ($project -ne $null) {
+       if($PSCmdlet.ShouldProcess($projectAdmin.providerDisplayName, "Add permissions for identity")){
+          Update-AllRepositoriesPermissions -pat $pat -organisation $organisation -descriptor $projectAdmin.descriptor -name $projectAdmin.providerDisplayname -projectId $project.id
+       }
    }
 }
