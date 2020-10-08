@@ -9,7 +9,7 @@
 .PARAMETER Organisation
     the Azure DevOps organisation e.g. 'myorg' from 'https://dev.azure.com/myorg'
 .PARAMETER ProjectName
-    A single project name to limit the scope of the script
+    A single project name to limit the scope of the script e.g. 'myproj'
 .PARAMETER WhatIf
     if set will only list the identities without updating permissions
 .INPUTS
