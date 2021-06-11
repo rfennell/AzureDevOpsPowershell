@@ -17,17 +17,17 @@ param
     [parameter(Mandatory=$false,HelpMessage="Default work remaining for a task, could uses a strange number so it is easy to notice it is defaulted")]
 	$defaultsize = 0 ,
 
-    [parameter(Mandatory=$false,HelpMessage="Allows the replacement of the standard tasks that are generated, provided as hashtable. If you don't wish to set an activity type leave the value empty'")]
+    [parameter(Mandatory=$false,HelpMessage="Allows the replacement of the standard tasks that are generated, provided as hashtable. If you don't wish to set an activity type leave the value empty. If a specific set of tasks for WIT is not listed then the <Default> block will used'")]
     $taskTitles = @{
     "Bug" =  (@{Title = "Investigation Task for Bug {0}"; Activity = "Development"},
               @{Title = "Write test Task for Bug {0}"; Activity = "Testing"},
               @{Title = "Run tests Task for Bug {0}"; Activity = "Testing"});
-    "Product Backlog Item" =  @(@{Title = "Design Task for PBI {0}"; Activity = "Design"},
-                                @{Title = "Development Task for PBI {0}"; Activity = "Development"},
-                                @{Title = "Write test Task for PBI {0}"; Activity = "Testing"},
-                                @{Title = "Run tests Task for PBI {0}"; Activity = "Testing"},
-                                @{Title = "Documentation Task for PBI {0}"; Activity = "Documentation"},
-                                @{Title = "Deployment Task for PBI {0}"; Activity = "Deployment"})
+    "<DEFAULT>" =  @(@{Title = "Design Task for {1} {0}"; Activity = "Design"},
+                                @{Title = "Development Task for {1} {0}"; Activity = "Development"},
+                                @{Title = "Write test Task for {1} {0}"; Activity = "Testing"},
+                                @{Title = "Run tests Task for {1} {0}"; Activity = "Testing"},
+                                @{Title = "Documentation Task {1} PBI {0}"; Activity = "Documentation"},
+                                @{Title = "Deployment Task for {1} {0}"; Activity = "Deployment"});
     },
 
     [parameter(Mandatory=$false,HelpMessage="Allows the replacement of the standard tasks states that are considered, provided as array")]
@@ -81,6 +81,7 @@ function Add-TasksToWorkItems
         $id,
         $tasks,
         $size,
+        $wit,
         $username,
         $password
 
@@ -92,7 +93,7 @@ function Add-TasksToWorkItems
     foreach ($task in $tasks)
     {
         $wc = Get-WebClient -username $username -password $password -ContentType "application/json-patch+json"
-        $title = [string]::Format($task.Title, $id)
+        $title = [string]::Format($task.Title, $id, $wit)
         $activity = $task.Activity
         $uri = "$($tfsUri)/_apis/wit/workitems/`$Task?api-version=1.0"
         $data = @(@{op = "add"; path = "/fields/System.Title"; value = "$title" } ;   `
@@ -150,7 +151,16 @@ function Get-WorkItemsInIterationWithNoTask
     write-host "Getting Backlog Items`n   under '$iterationpath'`n   from '$tfsUri'`n   in the state(s) of '$($states -join ', ')' that have no child tasks`n" -ForegroundColor Green
 
     $uri = "$($tfsUri)/_apis/wit/wiql?api-version=1.0"
-    $wiq = "SELECT [System.Id], [System.Links.LinkType], [System.WorkItemType], [System.Title], [System.AssignedTo], [System.State], [System.Tags] FROM WorkItemLinks WHERE (  [Source].[System.State] IN (""$($states -join '", "')"")  AND  [Source].[System.IterationPath] UNDER '$iterationpath' AND [Source].[System.WorkItemType] IN ('Bug','Product Backlog Item')) And ([System.Links.LinkType] <> '') And ([Target].[System.WorkItemType] = 'Task') ORDER BY [System.Id] mode(MayContain)"
+    # $wiq = "SELECT [System.Id], [System.Links.LinkType], [System.WorkItemType], [System.Title], [System.AssignedTo], [System.State], [System.Tags] FROM WorkItemLinks WHERE ( [Source].[System.State] IN (""$($states -join '", "')"")  AND  [Source].[System.IterationPath] UNDER '$iterationpath' AND [Source].[System.WorkItemType] IN GROUP 'Microsoft.RequirementCategory' And ([System.Links.LinkType] <> '') And ([Target].[System.WorkItemType] = 'Task') ORDER BY [System.Id] mode(MayContain)"
+    $wiq = "SELECT [System.Id], [System.Links.LinkType], [System.WorkItemType], [System.Title], [System.AssignedTo], [System.State], [System.Tags] 
+    FROM WorkItemLinks 
+    WHERE ( 
+        [Source].[System.State] IN (""$($states -join '", "')"")  AND
+        [Source].[System.IterationPath] UNDER '$iterationpath' AND 
+        ([Source].[System.WorkItemType] IN GROUP 'Microsoft.RequirementCategory' or [Source].[System.WorkItemType] IN GROUP 'Microsoft.BugCategory')) And 
+        ([System.Links.LinkType] <> '') And 
+        ([Target].[System.WorkItemType] = 'Task') 
+    ORDER BY [System.Id] mode(MayContain)"
 
     $data = @{query = $wiq } | ConvertTo-Json
 
@@ -214,13 +224,12 @@ if (@($workItems).Count -gt 0)
         {
             if ($taskTitles.ContainsKey($wi.WIT) -eq $false)
             {
-                Write-Error "Unknown work item type '$($wi.WIT)' found on backlog"
-                exit
+                $taskItems =$taskTitles.$("<DEFAULT>")
             } else
             {
                 $taskItems =$taskTitles.$($wi.WIT)
             }
-            Add-TasksToWorkItems -tfsUri $collectionUrl/$teamproject -id $wi.id -tasks $taskItems -IterationPath $iterationPath -AreaPath $wi.Fields.'System.AreaPath' -size $defaultsize -username $username -password $password
+            Add-TasksToWorkItems -tfsUri $collectionUrl/$teamproject -id $wi.id -tasks $taskItems -IterationPath $iterationPath -AreaPath $wi.Fields.'System.AreaPath' -size $defaultsize -wit $wi.WIT -username $username -password $password
         }
     }
 } else
