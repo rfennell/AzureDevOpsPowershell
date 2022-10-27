@@ -18,12 +18,7 @@ param
     $agentName,
 
     [parameter(Mandatory=$true,HelpMessage='Capabilities to add e.g. "MyAgent=true, host=$env:computername"')]
-    $capabilities,
-
-
-    $interval = 10,
-    
-    $maxRetryCount = 10
+    $capabilities
 )
 
 
