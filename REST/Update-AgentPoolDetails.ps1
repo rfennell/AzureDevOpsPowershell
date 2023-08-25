@@ -1,7 +1,7 @@
 ﻿##-----------------------------------------------------------------------
 ## <copyright file="Update-AgentPoolDetails.ps1">(c) Richard Fennell. </copyright>
 ##-----------------------------------------------------------------------
-# Updates the description of a VMSS based pool in Azure DevOps
+# Updates the description of an Azure DevOps Agent Pool
 param
 (
 
